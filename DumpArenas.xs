@@ -16,15 +16,18 @@
 
 void DumpPointer( pTHX_ PerlIO *f, SV *sv ) {
   if ( &PL_sv_undef == sv ) {
-    PerlIO_puts(f, "PL_sv_undef");
+    PerlIO_puts(f, "sv_undef");
   }
   else if (&PL_sv_yes == sv) {
-    PerlIO_puts(f, "PL_sv_yes");
+    PerlIO_puts(f, "sv_yes");
   }
   else if (&PL_sv_no == sv) {
-    PerlIO_puts(f, "PL_sv_no");
+    PerlIO_puts(f, "sv_no");
   }
-  else if (&PL_sv_placeholder) {
+  else if (&PL_sv_placeholder == sv) { /* deleted hash entry */
+    PerlIO_printf(f, "sv_placeholder");
+  }
+  else {
     PerlIO_printf(f, "0x%"UVxf, PTR2UV(sv));
   }
 }
@@ -120,7 +123,15 @@ DumpHashKeys( aTHX_ PerlIO *f, SV *sv) {
 void
 DumpArenasPerlIO( pTHX_ PerlIO *f) {
   SV *arena;
-  
+  SV *verstash = NULL;
+
+  /* Workaround core bug in the version module
+   * https://rt.cpan.org/Ticket/Display.html?id=81635
+   * %version:: has a broken SvSTASH */
+#if PERL_VERSION >= 18
+  verstash = get_hv("version::", 0);
+#endif
+
   for (arena = PL_sv_arenaroot; arena; arena = (SV*)SvANY(arena)) {
     const SV *const arena_end = &arena[SvREFCNT(arena)];
     SV *sv;
@@ -130,11 +141,11 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
      */
     PerlIO_printf(f,"START ARENA = (0x%"UVxf"-0x%"UVxf")\n\n",PTR2UV(arena),PTR2UV(arena_end));
     for (sv = arena + 1; sv < arena_end; ++sv) {
-      if (SvTYPE(sv) != SVTYPEMASK
-          && SvREFCNT(sv)) {
+      if (SvTYPE(sv) != SVTYPEMASK && SvREFCNT(sv)) {
 
         /* Dump the plain SV */
-        do_sv_dump(0,f,sv,0,0,0,0);
+        if (sv != verstash)
+          do_sv_dump(0,f,sv,0,0,0,0);
         PerlIO_puts(f,"\n");
         
         /* Dump AvARRAY(0x...) = {{0x...,0x...}{0x...}} */
@@ -160,7 +171,7 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
         PerlIO_printf(f,"AVAILABLE(0x%"UVxf")\n\n",PTR2UV(sv));
       }
     }
-      PerlIO_printf(f,"END ARENA = (0x%"UVxf"-0x%"UVxf")\n\n",PTR2UV(arena),PTR2UV(arena_end));
+    PerlIO_printf(f,"END ARENA = (0x%"UVxf"-0x%"UVxf")\n\n",PTR2UV(arena),PTR2UV(arena_end));
   }
 }
 
@@ -185,6 +196,6 @@ DumpArenas()
         DumpArenas( aTHX );
 
 void
-DumpArenasFd( int fn )
+DumpArenasFd( int fd )
     CODE:
-        DumpArenasFd( aTHX_ fn );
+        DumpArenasFd( aTHX_ fd );
