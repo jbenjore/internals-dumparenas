@@ -157,13 +157,13 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
         /* Dump the plain SV */
         if (sv != broken_verstash) { /* workaround broken %version:: */
 #if defined(USE_ITHREADS) && defined(DEBUGGING) && defined(SVpbm_VALID)
-          /* workaround broken SvTAIL() in */dump.c */
+          /* workaround broken SvTAIL() in dump.c */
           if (SvTYPE(sv) != SVt_PVMG ||
               (!(SvFLAGS(sv) & SVpbm_VALID) &&
                (SvFLAGS(sv) & SVpbm_TAIL)))
 #endif
 #if PERL_VERSION < 8 && defined(DEBUGGING) && defined(SVpbm_VALID)
-            /* workaround broken CvANON() im 5.6/dump.c */
+            /* workaround broken CvANON() in 5.6 dump.c */
             if (SvTYPE(sv) != SVt_PVCV || !(SvFLAGS(sv) & 0x500))
 #endif
             do_sv_dump(0,f,sv,0,0,0,0);

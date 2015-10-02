@@ -1,5 +1,12 @@
 Revision history for Perl extension Internals::DumpArenas.
 
+34ed87f557720925808757ed08a6043ad50c8069 0.13
+49c4562ca31fc6dd160e647cc2b4ed727338f7be more special fixes for various broken core dump.c
+9333b0ef2b56ca7d0eca848daa92137dbf870ea6 fix DumpHashKeys for threaded perls
+75a3b66f7683bae1fadab8ab78b90cbcbd960bc1 fix RT#81635
+a992e8032e9a8a38c8fc740ebc471292f7fde013 use "0x%"UVxf PTR2UV(sv)
+61305abb08a87c41bda131ee9e270fcb26677e43 ChangeLog
+
 d2f657663744929fba1eacbc7caeac9d2abbb538 0.12
 b326ae2fb7c0c6ce16e28b9b84ce9e3ecbcb5527 Allow printing hash keys that are full SV*
 12b2d7800b6a9c15ef004ea454f58ce61fd20bd5 Update ppport.h
