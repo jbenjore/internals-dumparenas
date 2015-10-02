@@ -39,6 +39,7 @@ DumpAvARRAY( pTHX_ PerlIO *f, SV *sv) {
   I32 key = 0;
 
   PerlIO_printf(f,"AvARRAY(0x%"UVxf") = {",PTR2UV(AvARRAY(sv)));
+  if (!AvARRAY(sv)) return;
   if ( AvMAX(sv) != AvFILL(sv) ) {
     PerlIO_puts(f,"{");
   }
@@ -71,6 +72,7 @@ DumpHvARRAY( pTHX_ PerlIO *f, SV *sv) {
   SV *tmp = newSVpv("",0);
 
   PerlIO_printf(f,"HvARRAY(0x%"UVxf")\n",PTR2UV(HvARRAY(sv)));
+  if (!HvARRAY(sv)) goto hvend;
 
   for ( key = 0; key <= HvMAX(sv); ++key ) {
     for ( entry = HvARRAY(sv)[key]; entry; entry = HeNEXT(entry) ) {
@@ -78,6 +80,7 @@ DumpHvARRAY( pTHX_ PerlIO *f, SV *sv) {
         PerlIO_printf(
           f, "  [SV 0x%"UVxf"] => ",
           PTR2UV(HeKEY(entry)));
+        DumpPointer(aTHX_ f, MUTABLE_SV(HeKEY(entry)));
       }
       else {
         PerlIO_printf(
@@ -92,23 +95,26 @@ DumpHvARRAY( pTHX_ PerlIO *f, SV *sv) {
       PerlIO_puts(f, "\n");
     }
   }
+ hvend:
   PerlIO_puts(f,"\n");
 
   SvREFCNT_dec(tmp);
 }
-
+#if 0
 void
 DumpHashKeys( pTHX_ PerlIO *f, SV *sv) {
   I32 key = 0;
   HE *entry;
   SV *tmp = newSVpv("",0);
 
-  PerlIO_printf(f,"HASH KEYS at 0x%"UVxf"\n", PTR2UV(sv));
+  PerlIO_printf(f,"SHARED HASH KEYS at 0x%"UVxf"\n", PTR2UV(sv));
+  if (!HvARRAY(sv)) goto hkend;
   
   for ( key = 0; key <= HvMAX(sv); ++key ) {
     for ( entry = HvARRAY(sv)[key]; entry; entry = HeNEXT(entry) ) {
       if ( HEf_SVKEY == HeKLEN(entry) ) {
         PerlIO_printf(f, "    SV 0x%"UVxf"\n", PTR2UV(HeKEY(entry)) );
+        DumpPointer(aTHX_ f, MUTABLE_SV(HeKEY(entry)));
       }
       else {
         PerlIO_printf(f, "    0x%"UVxf" %s\n", PTR2UV(HeKEY(entry)),
@@ -117,10 +123,11 @@ DumpHashKeys( pTHX_ PerlIO *f, SV *sv) {
       } 
     }
   }
+ hkend:
   PerlIO_puts(f,"\n\n");
-
   SvREFCNT_dec(tmp);
 }
+#endif
 
 void
 DumpArenasPerlIO( pTHX_ PerlIO *f) {
@@ -174,11 +181,11 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
           if ( HvARRAY(sv) && HvMAX(sv) != -1 ) {
             DumpHvARRAY( aTHX_ f,sv);
           }
-          
-          if ( ! HvSHAREKEYS(sv) ) {
+#if 0
+          if ( HvSHAREKEYS(sv) ) {
             DumpHashKeys( aTHX_ f,sv);
           }
-          
+#endif
           break;
         }
       }
