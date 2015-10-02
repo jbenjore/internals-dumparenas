@@ -24,9 +24,11 @@ void DumpPointer( pTHX_ PerlIO *f, SV *sv ) {
   else if (&PL_sv_no == sv) {
     PerlIO_puts(f, "sv_no");
   }
+#if PERL_VERSION > 6
   else if (&PL_sv_placeholder == sv) { /* deleted hash entry */
     PerlIO_printf(f, "sv_placeholder");
   }
+#endif
   else {
     PerlIO_printf(f, "0x%"UVxf, PTR2UV(sv));
   }
@@ -106,10 +108,10 @@ DumpHashKeys( pTHX_ PerlIO *f, SV *sv) {
   for ( key = 0; key <= HvMAX(sv); ++key ) {
     for ( entry = HvARRAY(sv)[key]; entry; entry = HeNEXT(entry) ) {
       if ( HEf_SVKEY == HeKLEN(entry) ) {
-        PerlIO_printf(f, "    SV 0x%"UVxf"\n", HeKEY(entry) );
+        PerlIO_printf(f, "    SV 0x%"UVxf"\n", PTR2UV(HeKEY(entry)) );
       }
       else {
-        PerlIO_printf(f, "    0x%"UVxf" %s\n", HeKEY(entry),
+        PerlIO_printf(f, "    0x%"UVxf" %s\n", PTR2UV(HeKEY(entry)),
                       pv_display( (SV*)tmp, (const char*)HeKEY(entry),
                                   HeKLEN(entry), HeKLEN(entry), 0 ) );
       } 
@@ -123,13 +125,15 @@ DumpHashKeys( pTHX_ PerlIO *f, SV *sv) {
 void
 DumpArenasPerlIO( pTHX_ PerlIO *f) {
   SV *arena;
-  SV *verstash = NULL;
+  SV *broken_verstash = NULL;
 
   /* Workaround core bug in the version module
    * https://rt.cpan.org/Ticket/Display.html?id=81635
    * %version:: has a broken SvSTASH */
 #if PERL_VERSION >= 18
-  verstash = get_hv("version::", 0);
+  broken_verstash = MUTABLE_SV(get_hv("version::", 0));
+  if (PTR2IV(((XPVHV*)SvANY(broken_verstash))->xmg_stash) > 0x100)
+    broken_verstash = NULL;
 #endif
 
   for (arena = PL_sv_arenaroot; arena; arena = (SV*)SvANY(arena)) {
@@ -144,8 +148,19 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
       if (SvTYPE(sv) != SVTYPEMASK && SvREFCNT(sv)) {
 
         /* Dump the plain SV */
-        if (sv != verstash)
-          do_sv_dump(0,f,sv,0,0,0,0);
+        if (sv != broken_verstash) { /* workaround broken %version:: */
+#if defined(USE_ITHREADS) && defined(DEBUGGING) && defined(SVpbm_VALID)
+          /* workaround broken SvTAIL() in */dump.c */
+          if (SvTYPE(sv) != SVt_PVMG ||
+              (!(SvFLAGS(sv) & SVpbm_VALID) &&
+               (SvFLAGS(sv) & SVpbm_TAIL)))
+#endif
+#if PERL_VERSION < 8 && defined(DEBUGGING) && defined(SVpbm_VALID)
+            /* workaround broken CvANON() im 5.6/dump.c */
+            if (SvTYPE(sv) != SVt_PVCV || !(SvFLAGS(sv) & 0x500))
+#endif
+            do_sv_dump(0,f,sv,0,0,0,0);
+        }
         PerlIO_puts(f,"\n");
         
         /* Dump AvARRAY(0x...) = {{0x...,0x...}{0x...}} */
