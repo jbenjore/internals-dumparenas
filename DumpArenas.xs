@@ -25,7 +25,7 @@ void DumpPointer( pTHX_ PerlIO *f, SV *sv ) {
     PerlIO_puts(f, "PL_sv_no");
   }
   else if (&PL_sv_placeholder) {
-    PerlIO_printf(f, "%#x", (int)sv);
+    PerlIO_printf(f, "0x%"UVxf, PTR2UV(sv));
   }
 }
 
@@ -33,7 +33,7 @@ void
 DumpAvARRAY( pTHX_ PerlIO *f, SV *sv) {
   I32 key = 0;
 
-  PerlIO_printf(f,"AvARRAY(%#x) = {",(int)AvARRAY(sv));
+  PerlIO_printf(f,"AvARRAY(0x%"UVxf") = {",PTR2UV(AvARRAY(sv)));
   if ( AvMAX(sv) != AvFILL(sv) ) {
     PerlIO_puts(f,"{");
   }
@@ -65,19 +65,19 @@ DumpHvARRAY( pTHX_ PerlIO *f, SV *sv) {
   HE *entry;
   SV *tmp = newSVpv("",0);
 
-  PerlIO_printf(f,"HvARRAY(%#x)\n",(int)HvARRAY(sv));
+  PerlIO_printf(f,"HvARRAY(0x%"UVxf")\n",PTR2UV(HvARRAY(sv)));
 
   for ( key = 0; key <= HvMAX(sv); ++key ) {
     for ( entry = HvARRAY(sv)[key]; entry; entry = HeNEXT(entry) ) {
       if ( HEf_SVKEY == HeKLEN(entry) ) {
         PerlIO_printf(
-          f, "  [SV %#x] => ",
-          (int)HeKEY(entry));
+          f, "  [SV 0x%"UVxf"] => ",
+          PTR2UV(HeKEY(entry)));
       }
       else {
         PerlIO_printf(
-          f, "  [%#x %s] => ",
-          (int)HeKEY(entry),
+          f, "  [0x%"UVxf" %s] => ",
+          PTR2UV(HeKEY(entry)),
           pv_display(
             tmp,
             HeKEY(entry), HeKLEN(entry), HeKLEN(entry),
@@ -92,22 +92,23 @@ DumpHvARRAY( pTHX_ PerlIO *f, SV *sv) {
   SvREFCNT_dec(tmp);
 }
 
-/*
 void
 DumpHashKeys( aTHX_ PerlIO *f, SV *sv) {
   I32 key = 0;
   HE *entry;
   SV *tmp = newSVpv("",0);
 
-  PerlIO_printf(f,"HASH KEYS at %#x\n",sv);
+  PerlIO_printf(f,"HASH KEYS at 0x%"UVxf"\n", PTR2UV(sv));
   
   for ( key = 0; key <= HvMAX(sv); ++key ) {
     for ( entry = HvARRAY(sv)[key]; entry; entry = HeNEXT(entry) ) {
       if ( HEf_SVKEY == HeKLEN(entry) ) {
-        PerlIO_printf(f, "    SV %#x\n", HeKEY(entry) );
+        PerlIO_printf(f, "    SV 0x%"UVxf"\n", HeKEY(entry) );
       }
       else {
-        PerlIO_printf(f, "    %#x %s\n", HeKEY(entry), pv_display( (SV*)tmp, (const char*)HeKEY(entry), HeKLEN(entry), HeKLEN(entry), 0 ) );
+        PerlIO_printf(f, "    0x%"UVxf" %s\n", HeKEY(entry),
+                      pv_display( (SV*)tmp, (const char*)HeKEY(entry),
+                                  HeKLEN(entry), HeKLEN(entry), 0 ) );
       } 
     }
   }
@@ -115,7 +116,6 @@ DumpHashKeys( aTHX_ PerlIO *f, SV *sv) {
 
   SvREFCNT_dec(tmp);
 }
-*/
 
 void
 DumpArenasPerlIO( pTHX_ PerlIO *f) {
@@ -128,7 +128,7 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
     /* See also the static function S_visit in perl's sv.c
      * This is a copied and pasted implementation of that function.
      */
-    PerlIO_printf(f,"START ARENA = (%#x-%#x)\n\n",(int)arena,(int)arena_end);
+    PerlIO_printf(f,"START ARENA = (0x%"UVxf"-0x%"UVxf")\n\n",PTR2UV(arena),PTR2UV(arena_end));
     for (sv = arena + 1; sv < arena_end; ++sv) {
       if (SvTYPE(sv) != SVTYPEMASK
           && SvREFCNT(sv)) {
@@ -140,29 +140,27 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
         /* Dump AvARRAY(0x...) = {{0x...,0x...}{0x...}} */
         switch (SvTYPE(sv)) {
         case SVt_PVAV:
-          if ( AvARRAY(sv)
-               && AvMAX(sv) != -1 ) {
+          if ( AvARRAY(sv) && AvMAX(sv) != -1 ) {
             DumpAvARRAY( aTHX_ f,sv);
           }
           break;
         case SVt_PVHV:
-          if ( HvARRAY(sv)
-               && HvMAX(sv) != -1 ) {
+          if ( HvARRAY(sv) && HvMAX(sv) != -1 ) {
             DumpHvARRAY( aTHX_ f,sv);
           }
           
           if ( ! HvSHAREKEYS(sv) ) {
-            /* DumpHashKeys( aTHX_ f,sv); */
+            DumpHashKeys( aTHX_ f,sv);
           }
           
           break;
         }
       }
       else {
-        PerlIO_printf(f,"AVAILABLE(%#x)\n\n",(int)sv);
+        PerlIO_printf(f,"AVAILABLE(0x%"UVxf")\n\n",PTR2UV(sv));
       }
     }
-    PerlIO_printf(f,"END ARENA = (%#x-%#x)\n\n",(int)arena,(int)arena_end);
+      PerlIO_printf(f,"END ARENA = (0x%"UVxf"-0x%"UVxf")\n\n",PTR2UV(arena),PTR2UV(arena_end));
   }
 }
 
