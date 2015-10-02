@@ -96,7 +96,7 @@ DumpHvARRAY( pTHX_ PerlIO *f, SV *sv) {
 }
 
 void
-DumpHashKeys( aTHX_ PerlIO *f, SV *sv) {
+DumpHashKeys( pTHX_ PerlIO *f, SV *sv) {
   I32 key = 0;
   HE *entry;
   SV *tmp = newSVpv("",0);
