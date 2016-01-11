@@ -1,6 +1,8 @@
 Revision history for Perl extension Internals::DumpArenas.
 
-e4ea2e35ed48c526d6b59e21940bd2c8c4a07171 0.12_02 better SvSTASH DESTROY fix
+5012d88f8dacc14789489eb90af9814fc4b8b28f 0.12_02
+ab2f892bdbbb563ad14d70865ec7c864271c7a74 MUTABLE_SV does not exist < 5.9
+48a471636c4a31fcc02d7b7f1d760605c9e8e5ee better SvSTASH DESTROY fix
 
 998701b707591a1110820823e944a3a25f7f2b1d 0.12_01
 0c7a3429a06d9cbd83a499d32bd704c900ea6acb Protect from empty HvARRAY and AvARRAY ptrs
