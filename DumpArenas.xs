@@ -86,7 +86,7 @@ DumpHvARRAY( pTHX_ PerlIO *f, SV *sv) {
         PerlIO_printf(
           f, "  [SV 0x%"UVxf"] => ",
           PTR2UV(HeKEY(entry)));
-        DumpPointer(aTHX_ f, MUTABLE_SV(HeKEY(entry)));
+        DumpPointer(aTHX_ f, (SV*)(HeKEY(entry)));
       }
       else {
         PerlIO_printf(
@@ -120,7 +120,7 @@ DumpHashKeys( pTHX_ PerlIO *f, SV *sv) {
     for ( entry = HvARRAY(sv)[key]; entry; entry = HeNEXT(entry) ) {
       if ( HEf_SVKEY == HeKLEN(entry) ) {
         PerlIO_printf(f, "    SV 0x%"UVxf"\n", PTR2UV(HeKEY(entry)) );
-        DumpPointer(aTHX_ f, MUTABLE_SV(HeKEY(entry)));
+        DumpPointer(aTHX_ f, (SV*)(HeKEY(entry)));
       }
       else {
         PerlIO_printf(f, "    0x%"UVxf" %s\n", PTR2UV(HeKEY(entry)),
