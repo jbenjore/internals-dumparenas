@@ -14,6 +14,12 @@
 #include "XSUB.h"
 #include "ppport.h"
 
+/* need workaround broken dump of !SvOBJECT with SvSTASH in dump.c */
+/* only fixed in cperl so far */
+#if PERL_VERSION >= 18 && !defined(USE_CPERL)
+#define NEED_SAFE_SVSTASH
+#endif
+
 void DumpPointer( pTHX_ PerlIO *f, SV *sv ) {
   if ( &PL_sv_undef == sv ) {
     PerlIO_puts(f, "sv_undef");
@@ -132,16 +138,6 @@ DumpHashKeys( pTHX_ PerlIO *f, SV *sv) {
 void
 DumpArenasPerlIO( pTHX_ PerlIO *f) {
   SV *arena;
-  SV *broken_verstash = NULL;
-
-  /* Workaround core bug in the version module
-   * https://rt.cpan.org/Ticket/Display.html?id=81635
-   * %version:: has a broken SvSTASH */
-#if PERL_VERSION >= 18
-  broken_verstash = MUTABLE_SV(get_hv("version::", 0));
-  if (PTR2IV(((XPVHV*)SvANY(broken_verstash))->xmg_stash) > 0x100)
-    broken_verstash = NULL;
-#endif
 
   for (arena = PL_sv_arenaroot; arena; arena = (SV*)SvANY(arena)) {
     const SV *const arena_end = &arena[SvREFCNT(arena)];
@@ -154,20 +150,32 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
     for (sv = arena + 1; sv < arena_end; ++sv) {
       if (SvTYPE(sv) != SVTYPEMASK && SvREFCNT(sv)) {
 
-        /* Dump the plain SV */
-        if (sv != broken_verstash) { /* workaround broken %version:: */
+        /* workaround broken dump of !SvOBJECT with SvSTASH in dump.c */
+        /* only fixed in cperl so far */
+#ifdef NEED_SAFE_SVSTASH
+        HV* savestash = NULL;
+        if (!SvOBJECT(sv) && SvTYPE(sv) >= SVt_PVMG && SvSTASH(sv)) {
+          savestash = SvSTASH(sv);
+          SvSTASH(sv) = NULL;
+        }
+#endif
 #if defined(USE_ITHREADS) && defined(DEBUGGING) && defined(SVpbm_VALID)
-          /* workaround broken SvTAIL() in dump.c */
-          if (SvTYPE(sv) != SVt_PVMG ||
-              (!(SvFLAGS(sv) & SVpbm_VALID) &&
-               (SvFLAGS(sv) & SVpbm_TAIL)))
+        /* workaround broken SvTAIL() in dump.c */
+        if (SvTYPE(sv) != SVt_PVMG ||
+            (!(SvFLAGS(sv) & SVpbm_VALID) &&
+             (SvFLAGS(sv) & SVpbm_TAIL)))
 #endif
 #if PERL_VERSION < 8 && defined(DEBUGGING) && defined(SVpbm_VALID)
-            /* workaround broken CvANON() in 5.6 dump.c */
-            if (SvTYPE(sv) != SVt_PVCV || !(SvFLAGS(sv) & 0x500))
+          /* workaround broken CvANON() in 5.6 dump.c */
+          if (SvTYPE(sv) != SVt_PVCV || !(SvFLAGS(sv) & 0x500))
 #endif
+            /* Dump the plain SV */
             do_sv_dump(0,f,sv,0,0,0,0);
-        }
+
+#ifdef NEED_SAFE_SVSTASH
+        if (savestash)
+          SvSTASH(sv) = savestash;
+#endif
         PerlIO_puts(f,"\n");
         
         /* Dump AvARRAY(0x...) = {{0x...,0x...}{0x...}} */

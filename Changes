@@ -1,5 +1,7 @@
 Revision history for Perl extension Internals::DumpArenas.
 
+e4ea2e35ed48c526d6b59e21940bd2c8c4a07171 0.12_02 better SvSTASH DESTROY fix
+
 998701b707591a1110820823e944a3a25f7f2b1d 0.12_01
 0c7a3429a06d9cbd83a499d32bd704c900ea6acb Protect from empty HvARRAY and AvARRAY ptrs
 49c4562ca31fc6dd160e647cc2b4ed727338f7be more special fixes for various broken core dump.c
