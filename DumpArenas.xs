@@ -15,8 +15,8 @@
 #include "ppport.h"
 
 /* need workaround broken dump of !SvOBJECT with SvSTASH in dump.c */
-/* only fixed in cperl so far */
-#if PERL_VERSION >= 18 && !defined(USE_CPERL)
+/* fixed in cperl5.22.2 and perl5.23.8  */
+#if PERL_VERSION >= 18 && (!defined(USE_CPERL) && PERL_VERSION < 24)
 #define NEED_SAFE_SVSTASH
 #endif
 
@@ -73,7 +73,7 @@ DumpAvARRAY( pTHX_ PerlIO *f, SV *sv) {
 
 void
 DumpHvARRAY( pTHX_ PerlIO *f, SV *sv) {
-  I32 key = 0;
+  STRLEN key = 0;
   HE *entry;
   SV *tmp = newSVpv("",0);
 
@@ -148,7 +148,8 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
      */
     PerlIO_printf(f,"START ARENA = (0x%"UVxf"-0x%"UVxf")\n\n",PTR2UV(arena),PTR2UV(arena_end));
     for (sv = arena + 1; sv < arena_end; ++sv) {
-      if (SvTYPE(sv) != SVTYPEMASK && SvREFCNT(sv)) {
+      /* not freed */
+      if ((SvFLAGS(sv) != SVTYPEMASK) && SvREFCNT(sv)) {
 
         /* workaround broken dump of !SvOBJECT with SvSTASH in dump.c */
         /* only fixed in cperl so far */
@@ -186,7 +187,7 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
           }
           break;
         case SVt_PVHV:
-          if ( HvARRAY(sv) && HvMAX(sv) != -1 ) {
+          if ( HvARRAY(sv) && HvMAX(sv) != (STRLEN)-1 ) {
             DumpHvARRAY( aTHX_ f,sv);
           }
 #if 0
@@ -194,6 +195,7 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
             DumpHashKeys( aTHX_ f,sv);
           }
 #endif
+        default:
           break;
         }
       }
