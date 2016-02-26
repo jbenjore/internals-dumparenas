@@ -1,5 +1,7 @@
 Revision history for Perl extension Internals::DumpArenas.
 
+cbcdd3703b43545cdb7bf91515b02aa4846b3098 0.12_03: fix C warnings
+
 61c6040d371d1328812f1553633536a7123896ce 0.12_02
 ab2f892bdbbb563ad14d70865ec7c864271c7a74 MUTABLE_SV does not exist < 5.9
 48a471636c4a31fcc02d7b7f1d760605c9e8e5ee better SvSTASH DESTROY fix
