@@ -2,9 +2,9 @@ Revision history for Perl extension Internals::DumpArenas.
 
 
                                          0.12_05
-Fix -Wc++11-compat warnings
+07104dca97c0dedda082ec5cd3711988bcb3c1c1 Fix -Wc++11-compat warnings
 
-                                         0.12_04
+999a083ea82548f1c1dfcfcfbe2c256d7a4062db 0.12_04
 b32c0e7933793ee79e0b9f246d6526a0237c0aa9 print empty arrays and hashes, fix hash key types
 
 1dadd4032a623a3fd4e0340d198e26b74505dde6 0.12_03
