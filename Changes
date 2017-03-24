@@ -1,7 +1,7 @@
 Revision history for Perl extension Internals::DumpArenas.
 
 0.12_07
-Remove MANIFEST and EUMM cruft
+c582d900d7e99af2d2f3b60ecdf227d908f70cc9 Remove MANIFEST and EUMM cruft
 
 529034de8530666abafd31317680441fcee2b99b 0.12_06
 d7c3aa1a8ebe7e6d391c010c1363a86134f61eb9 fix PERL_GLOBAL_STRUCT_PRIVATE
