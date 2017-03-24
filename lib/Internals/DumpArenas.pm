@@ -3,7 +3,7 @@ package Internals::DumpArenas;
 
 use 5.006_000;
 
-$VERSION = '0.12_03';
+$VERSION = '0.12_04';
 
 use DynaLoader ();
 sub dl_load_flags { return 0x01 }
@@ -236,4 +236,5 @@ and the most recent version at L<http://github.com/rurban/internals-dumparenas.g
 
 =head1 AUTHOR
 
-Josh Jore
+Josh Jore,
+Reini Urban

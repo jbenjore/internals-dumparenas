@@ -73,7 +73,7 @@ DumpAvARRAY( pTHX_ PerlIO *f, SV *sv) {
 
 void
 DumpHvARRAY( pTHX_ PerlIO *f, SV *sv) {
-  STRLEN key = 0;
+  U32 key = 0;
   HE *entry;
   SV *tmp = newSVpv("",0);
 
@@ -109,7 +109,7 @@ DumpHvARRAY( pTHX_ PerlIO *f, SV *sv) {
 #if 0
 void
 DumpHashKeys( pTHX_ PerlIO *f, SV *sv) {
-  I32 key = 0;
+  U32 key = 0;
   HE *entry;
   SV *tmp = newSVpv("",0);
 
@@ -182,14 +182,12 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
         /* Dump AvARRAY(0x...) = {{0x...,0x...}{0x...}} */
         switch (SvTYPE(sv)) {
         case SVt_PVAV:
-          if ( AvARRAY(sv) && AvMAX(sv) != -1 ) {
-            DumpAvARRAY( aTHX_ f,sv);
-          }
+          /*if ( AvARRAY(sv) && AvMAX(sv) != -1 ) {*/
+          DumpAvARRAY( aTHX_ f,sv);
           break;
         case SVt_PVHV:
-          if ( HvARRAY(sv) && HvMAX(sv) != (STRLEN)-1 ) {
-            DumpHvARRAY( aTHX_ f,sv);
-          }
+          /*if ( HvARRAY(sv) && HvMAX(sv) != (STRLEN)-1 ) {*/
+          DumpHvARRAY( aTHX_ f,sv);
 #if 0
           if ( HvSHAREKEYS(sv) ) {
             DumpHashKeys( aTHX_ f,sv);
