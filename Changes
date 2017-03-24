@@ -1,7 +1,7 @@
 Revision history for Perl extension Internals::DumpArenas.
 
 
-0.12_06
+529034de8530666abafd31317680441fcee2b99b 0.12_06
 d7c3aa1a8ebe7e6d391c010c1363a86134f61eb9 fix PERL_GLOBAL_STRUCT_PRIVATE
 
 68d11bf0abc812d8481c6bfead668afd657a8fc0 0.12_05
