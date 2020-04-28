@@ -14,18 +14,30 @@
 #include "XSUB.h"
 #include "ppport.h"
 
+/* need workaround broken dump of !SvOBJECT with SvSTASH in dump.c */
+/* fixed in cperl5.22.2 and perl5.23.8  */
+#if PERL_VERSION >= 18 && (!defined(USE_CPERL) && PERL_VERSION < 24)
+#define NEED_SAFE_SVSTASH
+#endif
+
 void DumpPointer( pTHX_ PerlIO *f, SV *sv ) {
+  dVAR;
   if ( &PL_sv_undef == sv ) {
-    PerlIO_puts(f, "PL_sv_undef");
+    PerlIO_puts(f, "sv_undef");
   }
   else if (&PL_sv_yes == sv) {
-    PerlIO_puts(f, "PL_sv_yes");
+    PerlIO_puts(f, "sv_yes");
   }
   else if (&PL_sv_no == sv) {
-    PerlIO_puts(f, "PL_sv_no");
+    PerlIO_puts(f, "sv_no");
   }
-  else if (&PL_sv_placeholder) {
-    PerlIO_printf(f, "%#x", (int)sv);
+#if PERL_VERSION > 6
+  else if (&PL_sv_placeholder == sv) { /* deleted hash entry */
+    PerlIO_printf(f, "sv_placeholder");
+  }
+#endif
+  else {
+    PerlIO_printf(f, "0x%" UVxf, PTR2UV(sv));
   }
 }
 
@@ -33,7 +45,8 @@ void
 DumpAvARRAY( pTHX_ PerlIO *f, SV *sv) {
   I32 key = 0;
 
-  PerlIO_printf(f,"AvARRAY(%#x) = {",(int)AvARRAY(sv));
+  PerlIO_printf(f,"AvARRAY(0x%" UVxf ") = {",PTR2UV(AvARRAY(sv)));
+  if (!AvARRAY(sv)) return;
   if ( AvMAX(sv) != AvFILL(sv) ) {
     PerlIO_puts(f,"{");
   }
@@ -61,23 +74,25 @@ DumpAvARRAY( pTHX_ PerlIO *f, SV *sv) {
 
 void
 DumpHvARRAY( pTHX_ PerlIO *f, SV *sv) {
-  I32 key = 0;
+  U32 key = 0;
   HE *entry;
   SV *tmp = newSVpv("",0);
 
-  PerlIO_printf(f,"HvARRAY(%#x)\n",(int)HvARRAY(sv));
+  PerlIO_printf(f,"HvARRAY(0x%" UVxf ")\n",PTR2UV(HvARRAY(sv)));
+  if (!HvARRAY(sv)) goto hvend;
 
   for ( key = 0; key <= HvMAX(sv); ++key ) {
     for ( entry = HvARRAY(sv)[key]; entry; entry = HeNEXT(entry) ) {
       if ( HEf_SVKEY == HeKLEN(entry) ) {
         PerlIO_printf(
-          f, "  [SV %#x] => ",
-          (int)HeKEY(entry));
+          f, "  [SV 0x%" UVxf "] => ",
+          PTR2UV(HeKEY(entry)));
+        DumpPointer(aTHX_ f, (SV*)(HeKEY(entry)));
       }
       else {
         PerlIO_printf(
-          f, "  [%#x %s] => ",
-          (int)HeKEY(entry),
+          f, "  [0x%" UVxf " %s] => ",
+          PTR2UV(HeKEY(entry)),
           pv_display(
             tmp,
             HeKEY(entry), HeKLEN(entry), HeKLEN(entry),
@@ -87,40 +102,44 @@ DumpHvARRAY( pTHX_ PerlIO *f, SV *sv) {
       PerlIO_puts(f, "\n");
     }
   }
+ hvend:
   PerlIO_puts(f,"\n");
 
   SvREFCNT_dec(tmp);
 }
-
-/*
+#if 0
 void
-DumpHashKeys( aTHX_ PerlIO *f, SV *sv) {
-  I32 key = 0;
+DumpHashKeys( pTHX_ PerlIO *f, SV *sv) {
+  U32 key = 0;
   HE *entry;
   SV *tmp = newSVpv("",0);
 
-  PerlIO_printf(f,"HASH KEYS at %#x\n",sv);
+  PerlIO_printf(f,"SHARED HASH KEYS at 0x%" UVxf "\n", PTR2UV(sv));
+  if (!HvARRAY(sv)) goto hkend;
   
   for ( key = 0; key <= HvMAX(sv); ++key ) {
     for ( entry = HvARRAY(sv)[key]; entry; entry = HeNEXT(entry) ) {
       if ( HEf_SVKEY == HeKLEN(entry) ) {
-        PerlIO_printf(f, "    SV %#x\n", HeKEY(entry) );
+        PerlIO_printf(f, "    SV 0x%" UVxf "\n", PTR2UV(HeKEY(entry)) );
+        DumpPointer(aTHX_ f, (SV*)(HeKEY(entry)));
       }
       else {
-        PerlIO_printf(f, "    %#x %s\n", HeKEY(entry), pv_display( (SV*)tmp, (const char*)HeKEY(entry), HeKLEN(entry), HeKLEN(entry), 0 ) );
+        PerlIO_printf(f, "    0x%" UVxf " %s\n", PTR2UV(HeKEY(entry)),
+                      pv_display( (SV*)tmp, (const char*)HeKEY(entry),
+                                  HeKLEN(entry), HeKLEN(entry), 0 ) );
       } 
     }
   }
+ hkend:
   PerlIO_puts(f,"\n\n");
-
   SvREFCNT_dec(tmp);
 }
-*/
+#endif
 
 void
 DumpArenasPerlIO( pTHX_ PerlIO *f) {
   SV *arena;
-  
+
   for (arena = PL_sv_arenaroot; arena; arena = (SV*)SvANY(arena)) {
     const SV *const arena_end = &arena[SvREFCNT(arena)];
     SV *sv;
@@ -128,41 +147,62 @@ DumpArenasPerlIO( pTHX_ PerlIO *f) {
     /* See also the static function S_visit in perl's sv.c
      * This is a copied and pasted implementation of that function.
      */
-    PerlIO_printf(f,"START ARENA = (%#x-%#x)\n\n",(int)arena,(int)arena_end);
+    PerlIO_printf(f,"START ARENA = (0x%" UVxf "-0x%" UVxf ")\n\n",PTR2UV(arena),PTR2UV(arena_end));
     for (sv = arena + 1; sv < arena_end; ++sv) {
-      if (SvTYPE(sv) != SVTYPEMASK
-          && SvREFCNT(sv)) {
+      /* not freed */
+      if ((SvFLAGS(sv) != SVTYPEMASK) && SvREFCNT(sv)) {
 
-        /* Dump the plain SV */
-        do_sv_dump(0,f,sv,0,0,0,0);
+        /* workaround broken dump of !SvOBJECT with SvSTASH in dump.c */
+        /* only fixed in cperl so far */
+#ifdef NEED_SAFE_SVSTASH
+        HV* savestash = NULL;
+        if (!SvOBJECT(sv) && SvTYPE(sv) >= SVt_PVMG && SvSTASH(sv)) {
+          savestash = SvSTASH(sv);
+          SvSTASH(sv) = NULL;
+        }
+#endif
+#if defined(USE_ITHREADS) && defined(DEBUGGING) && defined(SVpbm_VALID)
+        /* workaround broken SvTAIL() in dump.c */
+        if (SvTYPE(sv) != SVt_PVMG ||
+            (!(SvFLAGS(sv) & SVpbm_VALID) &&
+             (SvFLAGS(sv) & SVpbm_TAIL)))
+#endif
+#if PERL_VERSION < 8 && defined(DEBUGGING) && defined(SVpbm_VALID)
+          /* workaround broken CvANON() in 5.6 dump.c */
+          if (SvTYPE(sv) != SVt_PVCV || !(SvFLAGS(sv) & 0x500))
+#endif
+            /* Dump the plain SV */
+            do_sv_dump(0,f,sv,0,0,0,0);
+
+#ifdef NEED_SAFE_SVSTASH
+        if (savestash)
+          SvSTASH(sv) = savestash;
+#endif
         PerlIO_puts(f,"\n");
         
         /* Dump AvARRAY(0x...) = {{0x...,0x...}{0x...}} */
         switch (SvTYPE(sv)) {
         case SVt_PVAV:
-          if ( AvARRAY(sv)
-               && AvMAX(sv) != -1 ) {
-            DumpAvARRAY( aTHX_ f,sv);
-          }
+          /*if ( AvARRAY(sv) && AvMAX(sv) != -1 ) {*/
+          DumpAvARRAY( aTHX_ f,sv);
           break;
         case SVt_PVHV:
-          if ( HvARRAY(sv)
-               && HvMAX(sv) != -1 ) {
-            DumpHvARRAY( aTHX_ f,sv);
+          /*if ( HvARRAY(sv) && HvMAX(sv) != (STRLEN)-1 ) {*/
+          DumpHvARRAY( aTHX_ f,sv);
+#if 0
+          if ( HvSHAREKEYS(sv) ) {
+            DumpHashKeys( aTHX_ f,sv);
           }
-          
-          if ( ! HvSHAREKEYS(sv) ) {
-            /* DumpHashKeys( aTHX_ f,sv); */
-          }
-          
+#endif
+        default:
           break;
         }
       }
       else {
-        PerlIO_printf(f,"AVAILABLE(%#x)\n\n",(int)sv);
+        PerlIO_printf(f,"AVAILABLE(0x%" UVxf ")\n\n",PTR2UV(sv));
       }
     }
-    PerlIO_printf(f,"END ARENA = (%#x-%#x)\n\n",(int)arena,(int)arena_end);
+    PerlIO_printf(f,"END ARENA = (0x%" UVxf "-0x%" UVxf ")\n\n",PTR2UV(arena),PTR2UV(arena_end));
   }
 }
 
@@ -187,6 +227,6 @@ DumpArenas()
         DumpArenas( aTHX );
 
 void
-DumpArenasFd( int fn )
+DumpArenasFd( int fd )
     CODE:
-        DumpArenasFd( aTHX_ fn );
+        DumpArenasFd( aTHX_ fd );

@@ -1,5 +1,32 @@
 Revision history for Perl extension Internals::DumpArenas.
 
+0.12_07
+c582d900d7e99af2d2f3b60ecdf227d908f70cc9 Remove MANIFEST and EUMM cruft
+
+529034de8530666abafd31317680441fcee2b99b 0.12_06
+d7c3aa1a8ebe7e6d391c010c1363a86134f61eb9 fix PERL_GLOBAL_STRUCT_PRIVATE
+
+68d11bf0abc812d8481c6bfead668afd657a8fc0 0.12_05
+07104dca97c0dedda082ec5cd3711988bcb3c1c1 Fix -Wc++11-compat warnings
+
+999a083ea82548f1c1dfcfcfbe2c256d7a4062db 0.12_04
+b32c0e7933793ee79e0b9f246d6526a0237c0aa9 print empty arrays and hashes, fix hash key types
+
+1dadd4032a623a3fd4e0340d198e26b74505dde6 0.12_03
+cbcdd3703b43545cdb7bf91515b02aa4846b3098 fix C warnings
+
+61c6040d371d1328812f1553633536a7123896ce 0.12_02
+ab2f892bdbbb563ad14d70865ec7c864271c7a74 MUTABLE_SV does not exist < 5.9
+48a471636c4a31fcc02d7b7f1d760605c9e8e5ee better SvSTASH DESTROY fix
+
+998701b707591a1110820823e944a3a25f7f2b1d 0.12_01
+0c7a3429a06d9cbd83a499d32bd704c900ea6acb Protect from empty HvARRAY and AvARRAY ptrs
+49c4562ca31fc6dd160e647cc2b4ed727338f7be more special fixes for various broken core dump.c
+9333b0ef2b56ca7d0eca848daa92137dbf870ea6 fix DumpHashKeys for threaded perls
+75a3b66f7683bae1fadab8ab78b90cbcbd960bc1 fix RT#81635
+a992e8032e9a8a38c8fc740ebc471292f7fde013 use "0x%"UVxf PTR2UV(sv)
+61305abb08a87c41bda131ee9e270fcb26677e43 ChangeLog
+
 d2f657663744929fba1eacbc7caeac9d2abbb538 0.12
 b326ae2fb7c0c6ce16e28b9b84ce9e3ecbcb5527 Allow printing hash keys that are full SV*
 12b2d7800b6a9c15ef004ea454f58ce61fd20bd5 Update ppport.h

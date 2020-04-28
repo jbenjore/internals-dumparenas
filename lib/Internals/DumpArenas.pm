@@ -3,7 +3,7 @@ package Internals::DumpArenas;
 
 use 5.006_000;
 
-$VERSION = '0.12';
+$VERSION = '0.12_07';
 
 use DynaLoader ();
 sub dl_load_flags { return 0x01 }
@@ -224,14 +224,17 @@ same thing for perl.
 =head1 COPYRIGHT & LICENSE
 
 Copyright 2009-2011 Josh Jore, all rights reserved.
+Copyright 2015 cPanel Inc, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =head1 SOURCE AVAILABILITY
 
-This source is in Github: L<git://github.com/jbenjore/internals-dumparenas.git>
+This source is in Github: L<http://github.com/jbenjore/internals-dumparenas.git>
+and the most recent version at L<http://github.com/rurban/internals-dumparenas.git>
 
 =head1 AUTHOR
 
-Josh Jore
+Josh Jore,
+Reini Urban
